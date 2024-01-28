@@ -7,6 +7,7 @@ from typing import Optional
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from language_mapfile import country_language_map
+from reservation_mapfile import reservation_status_map
 
 from hotel.external_api import (
     get_reservations_between_dates,
@@ -166,7 +167,7 @@ class PMS_Mews(PMS):
                 if stay_instance.pms_guest_id!=details['GuestId']:
                     stay_instance.pms_guest_id=details['GuestId']
                 if stay_instance.status!=details['Status']:
-                    stay_instance.status=details['Status']
+                    stay_instance.status=reservation_status_map[details['Status']]
                 if stay_instance.checkin!=details['CheckInDate']:
                     stay_instance.checkin=details['CheckInDate']
                 if stay_instance.checkout!=details['CheckOutDate']:
@@ -183,7 +184,7 @@ class PMS_Mews(PMS):
                 pms_guest_id=details["GuestId"],
                 checkin= details['CheckInDate'],
                 checkout=details['CheckOutDate'],
-                status= details['Status']
+                status= reservation_status_map[details['Status']]
                 )
 
 
