@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
 import inspect
 import sys
-
+import json
+from datetime import datetime, timedelta
 from typing import Optional
+from django.shortcuts import get_object_or_404
+from django.db import transaction
 
 from hotel.external_api import (
     get_reservations_between_dates,
@@ -78,21 +81,148 @@ class PMS(ABC):
 
 class PMS_Mews(PMS):
     def clean_webhook_payload(self, payload: str) -> dict:
-        # TODO: Implement the method
-        return {}
+
+        json_string = payload.decode('utf-8')
+        data_dict = json.loads(json_string)
+        #Remove duplicates
+        data_dict["Events"] = list({event["Value"]["ReservationId"]: event for event in data_dict["Events"]}.values())
+        return data_dict
 
     def handle_webhook(self, webhook_data: dict) -> bool:
-        # TODO: Implement the method
+        #self.update_tomorrows_stays()
+
+        for event in webhook_data['Events']:
+
+            print('====================== NEW RESERVATION ======================================')
+            reservation_id=event["Value"]["ReservationId"]
+
+            # # tuka moze i so retries 
+            # try:
+            #     details=json.loads(get_reservation_details(reservation_id))
+            # except:
+            #     # False tuka prekinuva se 
+            #     return 
+            
+            details=json.loads(get_reservation_details(reservation_id))
+
+                
+            hotel_instance = get_object_or_404(Hotel, pms_hotel_id=details['HotelId'])
+
+            guest_details=json.loads(get_guest_details(details['GuestId']))
+            # print(guest_details)
+            # print(type(guest_details))
+            guest_phone=guest_details["Phone"]
+
+            '''
+            Since the guest name is not an identifier field, even if it not assigned we can create the 
+            guest, only with an empty string fo the name
+            '''
+            if guest_details['Name'] is None:
+                guest_details['Name']=''
+
+            '''
+            Since the phone is the main identifier a guest, and by extension fo the stay, if the
+            phone number is invalid then we skip the creation or update of that guest.
+            Ideally it would be better to return an error message to be able to identify the invalid entry, 
+            but the handle webhook is designed here to return a boolean, so we just make the guest column None
+            and not disrupt the execution of the function
+            '''
+            if guest_phone in ["Not available", "",None]:
+                print('Continue')
+                guest_instance=None
+            else:
+                # Try to get an existing Guest instance
+                #with transaction.atomic():
+                guest_instance = Guest.objects.filter(phone=guest_phone).first()
+                if guest_instance:
+                    if guest_instance.name != guest_details["Name"]:
+                        guest_instance.name = guest_details["Name"]
+
+                    if guest_instance.language != get_language(guest_details["Country"]):
+                        guest_instance.language = get_language(guest_details["Country"])
+
+                    guest_instance.save()
+                    
+                else:
+                    guest_instance=Guest.objects.create(
+                    name=guest_details["Name"],
+                    phone=guest_phone,
+                    language=get_language(guest_details["Country"]))
+
+            print(guest_instance)
+            print('xxxxxxxxxxxxxxxxxx', hotel_instance,details['ReservationId'])
+            stay_instance = Stay.objects.filter(hotel=hotel_instance, pms_reservation_id=details['ReservationId']).first()
+
+            # print(stay_instance.pms_reservation_id)
+            print(stay_instance)
+            if stay_instance:
+
+                print('Update')
+                if stay_instance.hotel!= hotel_instance:
+                    stay_instance.hotel=hotel_instance
+                if stay_instance.guest!= guest_instance:
+                    stay_instance.guest=guest_instance
+                if stay_instance.pms_reservation_id!=details['ReservationId']:
+                    stay_instance.pms_reservation_id=details['ReservationId']
+                if stay_instance.pms_guest_id!=details['GuestId']:
+                    stay_instance.pms_guest_id=details['GuestId']
+                if stay_instance.status!=details['Status']:
+                    stay_instance.status=details['Status']
+                if stay_instance.checkin!=details['CheckInDate']:
+                    stay_instance.checkin=details['CheckInDate']
+                if stay_instance.checkout!=details['CheckOutDate']:
+                    stay_instance.checkout=details['CheckOutDate']
+                
+                stay_instance.save()
+
+            else:
+                print('stay else')
+                stay_instance=Stay.objects.create(
+                hotel=hotel_instance,
+                guest=guest_instance,
+                pms_reservation_id=details['ReservationId'],
+                pms_guest_id=details["GuestId"],
+                checkin= details['CheckInDate'],
+                checkout=details['CheckOutDate'],
+                status= details['Status']
+                )
+
+            # print(self.stay_has_breakfast(stay_instance))
+            # print(stay_instance)
+
         return True
 
     def update_tomorrows_stays(self) -> bool:
-        # TODO: Implement the method
+
+        tomorrow_date = datetime.now()+timedelta(days=1)
+        tomorrow_date_string = tomorrow_date.strftime('%Y-%M-%D')
+        reservations=json.loads(get_reservations_between_dates(tomorrow_date_string, ''))
+        print(reservations)
+
+        ret_reservations={}
+        #Sort check in data in format as the test input
+        for res in reservations:
+            ret_reservations={}
+            ret_reservations['HotelId']=res['HotelId']
+            ret_reservations['IntegrationId']='Auto Update',
+            ret_reservations['Events']=[{"Name":" ","Value":{"ReservationId":res["ReservationId"]}}]
+            
+            #Call handle_webhook function
+            self.handle_webhook(ret_reservations)
+            
+
         return True
 
+    '''
+    We call this function with a stay instance. Since the value of breakfast is not written in the Stay table,
+    we have to get the reservation id and call the external_api function get_reservation_details() to get
+    information on the breakfast 
+    '''
     def stay_has_breakfast(self, stay: Stay) -> Optional[bool]:
         # TODO: Implement the method
-        return None
-
+        reservation_details=json.loads(get_reservation_details(stay.pms_reservation_id))
+        return reservation_details["BreakfastIncluded"]
+    
 
 def get_pms(name):
     fullname = "PMS_" + name.capitalize()
@@ -103,3 +233,6 @@ def get_pms(name):
 
     # if we have a PMS class for the given name, return an instance of it
     return getattr(current_module, fullname)() if fullname in clsnames else False
+
+def get_language(country):
+    return "da"

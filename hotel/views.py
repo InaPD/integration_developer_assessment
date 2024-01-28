@@ -41,9 +41,10 @@ def webhook(request, pms_name):
     pms = pms_systems.get_pms(pms_name)
 
     payload_cleaned = pms.clean_webhook_payload(request.body)
+    
     success = pms.handle_webhook(payload_cleaned)
 
     if not success:
-        return HttpResponse(status=400)
-    else:
+       return HttpResponse(status=400)
+    else: 
         return HttpResponse("Thanks for the update.")
