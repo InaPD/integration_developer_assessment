@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from language_mapfile import country_language_map
 
 from hotel.external_api import (
     get_reservations_between_dates,
@@ -131,8 +132,7 @@ class PMS_Mews(PMS):
                 print('Continue')
                 guest_instance=None
             else:
-                # Try to get an existing Guest instance
-                #with transaction.atomic():
+                # Try to get an existing Guest instance, if it exists update else create new guest entry
                 guest_instance = Guest.objects.filter(phone=guest_phone).first()
                 if guest_instance:
                     if guest_instance.name != guest_details["Name"]:
@@ -151,12 +151,11 @@ class PMS_Mews(PMS):
 
             print(guest_instance)
             print('xxxxxxxxxxxxxxxxxx', hotel_instance,details['ReservationId'])
+
+            # Try to get an existing Stay instance, if it exists update else create new stay entry
             stay_instance = Stay.objects.filter(hotel=hotel_instance, pms_reservation_id=details['ReservationId']).first()
 
-            # print(stay_instance.pms_reservation_id)
-            print(stay_instance)
             if stay_instance:
-
                 print('Update')
                 if stay_instance.hotel!= hotel_instance:
                     stay_instance.hotel=hotel_instance
@@ -187,8 +186,6 @@ class PMS_Mews(PMS):
                 status= details['Status']
                 )
 
-            # print(self.stay_has_breakfast(stay_instance))
-            # print(stay_instance)
 
         return True
 
@@ -213,13 +210,13 @@ class PMS_Mews(PMS):
 
         return True
 
-    '''
-    We call this function with a stay instance. Since the value of breakfast is not written in the Stay table,
-    we have to get the reservation id and call the external_api function get_reservation_details() to get
-    information on the breakfast 
-    '''
+
     def stay_has_breakfast(self, stay: Stay) -> Optional[bool]:
-        # TODO: Implement the method
+        '''
+        We call this function with a stay instance. Since the value of breakfast is not written in the Stay table,
+        we have to get the reservation id and call the external_api function get_reservation_details() to get
+        information on the breakfast 
+        '''
         reservation_details=json.loads(get_reservation_details(stay.pms_reservation_id))
         return reservation_details["BreakfastIncluded"]
     
@@ -235,4 +232,14 @@ def get_pms(name):
     return getattr(current_module, fullname)() if fullname in clsnames else False
 
 def get_language(country):
-    return "da"
+    '''
+    Function to get the language code from language_mapfile.py. It's always better to have 
+    all country codes matched to language codes in one separate config file, so that changes
+    can be made from one file. If the country code is not matched to any language, then
+    the default language is English.
+    '''
+    if country in country_language_map.keys():
+        print(country_language_map[country])
+        return country_language_map[country]
+    else:
+        return country_language_map["GB"]
