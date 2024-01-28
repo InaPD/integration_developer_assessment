@@ -95,24 +95,13 @@ class PMS_Mews(PMS):
 
         for event in webhook_data['Events']:
 
-            print('====================== NEW RESERVATION ======================================')
             reservation_id=event["Value"]["ReservationId"]
-
-            # # tuka moze i so retries 
-            # try:
-            #     details=json.loads(get_reservation_details(reservation_id))
-            # except:
-            #     # False tuka prekinuva se 
-            #     return 
-            
             details=json.loads(get_reservation_details(reservation_id))
 
                 
             hotel_instance = get_object_or_404(Hotel, pms_hotel_id=details['HotelId'])
 
             guest_details=json.loads(get_guest_details(details['GuestId']))
-            # print(guest_details)
-            # print(type(guest_details))
             guest_phone=guest_details["Phone"]
 
             '''
@@ -130,7 +119,6 @@ class PMS_Mews(PMS):
             and not disrupt the execution of the function
             '''
             if guest_phone in ["Not available", "",None]:
-                print('Continue')
                 guest_instance=None
             else:
                 # Try to get an existing Guest instance, if it exists update else create new guest entry
@@ -150,14 +138,10 @@ class PMS_Mews(PMS):
                     phone=guest_phone,
                     language=get_language(guest_details["Country"]))
 
-            print(guest_instance)
-            print('xxxxxxxxxxxxxxxxxx', hotel_instance,details['ReservationId'])
-
             # Try to get an existing Stay instance, if it exists update else create new stay entry
             stay_instance = Stay.objects.filter(hotel=hotel_instance, pms_reservation_id=details['ReservationId']).first()
 
             if stay_instance:
-                print('Update')
                 if stay_instance.hotel!= hotel_instance:
                     stay_instance.hotel=hotel_instance
                 if stay_instance.guest!= guest_instance:
@@ -176,7 +160,6 @@ class PMS_Mews(PMS):
                 stay_instance.save()
 
             else:
-                print('stay else')
                 stay_instance=Stay.objects.create(
                 hotel=hotel_instance,
                 guest=guest_instance,
@@ -240,7 +223,6 @@ def get_language(country):
     the default language is English.
     '''
     if country in country_language_map.keys():
-        print(country_language_map[country])
         return country_language_map[country]
     else:
         return country_language_map["GB"]
