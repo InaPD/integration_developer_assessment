@@ -48,3 +48,36 @@ def webhook(request, pms_name):
        return HttpResponse(status=400)
     else: 
         return HttpResponse("Thanks for the update.")
+    
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.base import JobLookupError
+from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
+from apscheduler.triggers.cron import CronTrigger
+
+from hotel.pms_systems import PMS_Mews
+
+scheduler = BackgroundScheduler()
+
+
+
+scheduler.add_jobstore(DjangoJobStore(), "default")
+
+
+@register_job(
+    scheduler,
+    CronTrigger(hour=0, minute=0, second=0, timezone="Europe/Skopje"),
+    replace_existing=True
+)
+def my_scheduled_task1():
+    # Your task logic goes here
+    pms_instance= PMS_Mews()
+    pms_instance.update_tomorrows_stays()
+    print("Task executed!")
+
+register_events(scheduler)
+
+try:
+    scheduler.start()
+except (KeyboardInterrupt, SystemExit):
+    # Allow graceful shutdown when needed
+    scheduler.shutdown()

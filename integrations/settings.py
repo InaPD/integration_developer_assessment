@@ -38,6 +38,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "hotel",
+    #"django_crontab",
+    #'background_task',
+    'django_apscheduler'
 ]
 
 MIDDLEWARE = [
