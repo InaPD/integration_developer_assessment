@@ -71,13 +71,21 @@ The handle_webhook function is used to process incomming changes of reservations
 
 This function performs an automatic update of the reservations that are planned for the next day. The dataset of reservations are retrieved from the external API with the function `get_reservations_between_dates()`, filtered by check in date. After the data is retrieved it is formated into a dictionary similar to the external input for the  `webhook/str:pms_name>/` endpoint and it is processed by the handle_webhhok function. This process is scheduled to be performed every day at 00:00. 
 
-To test the logic of this function we can use the Django shell by executing `python manage.py shell ` in Terminal to open it. After it is opened we perform the following code:
+To test the logic of this function we can use the Django shell by executing `python manage.py shell ` in Terminal to open it. After it is opened we enter the following code block:
 ```
 from hotel.pms_systems import PMS_Mews
 
 pms_mews_instance = PMS_Mews()
 pms_mews_instance.update_tomorrows_stays()
+
 ```
+
+To schedule the execution of the update every day at 00:00 we use django apscheduler, which calls a function wiith similar logic to the django shell execution above. The function uses a CronTrigger object to schedule the update of stays for the following day. 
+
 ### stay_has_breakfast
 
 This function checks if the reservation has breakfast includded, by getting the resetvation details from the external API filtered by the reservation id retrieved from the Stay object on input. 
+
+
+For any additional questions you can contact me at ipopducheva@gmail.com
+
