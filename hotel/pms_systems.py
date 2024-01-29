@@ -91,7 +91,6 @@ class PMS_Mews(PMS):
         return data_dict
 
     def handle_webhook(self, webhook_data: dict) -> bool:
-        #self.update_tomorrows_stays()
 
         for event in webhook_data['Events']:
 
@@ -179,20 +178,20 @@ class PMS_Mews(PMS):
         tomorrow_date_string = tomorrow_date.strftime('%Y-%M-%D')
         reservations=json.loads(get_reservations_between_dates(tomorrow_date_string, ''))
         print(reservations)
-
-        ret_reservations={}
+        print('==========================================')
+        autoupdate_reservations={}
+        autoupdate_reservations['HotelId']=reservations[0]['HotelId']
+        autoupdate_reservations['IntegrationId']='Auto Update'
+        autoupdate_reservations['Events']=[]
         #Sort check in data in format as the test input
         for res in reservations:
-            ret_reservations={}
-            ret_reservations['HotelId']=res['HotelId']
-            ret_reservations['IntegrationId']='Auto Update',
-            ret_reservations['Events']=[{"Name":" ","Value":{"ReservationId":res["ReservationId"]}}]
+            autoupdate_reservations['Events'].append({"Name":"AutoUpdate","Value":{"ReservationId":res["ReservationId"]}})
             
-            #Call handle_webhook function
-            self.handle_webhook(ret_reservations)
-            
+        #Call handle_webhook function
+        print(autoupdate_reservations)
 
-        return True
+        update=self.handle_webhook(autoupdate_reservations)
+        return update
 
 
     def stay_has_breakfast(self, stay: Stay) -> Optional[bool]:
