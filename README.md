@@ -55,13 +55,13 @@ The implementation of the business logic for this assessment is done in the pms_
 
 ### clean_webhook_payload
 
-The goal for this function was to clean up JSON payload that we receive from the request to the endpoint `webhook/str:pms_name>/`. The recieved JSON has a byte string payload and should be converted into a Unicode string using the UTF-8 encoding. After it is decoded it is converted into a python dictionary. Logic to remove possible duplicates in the 'Events' list is also implemented. This function returns a dictionary 
+The goal for this function was to clean up JSON payload that we receive from the request to the endpoint `webhook/str:pms_name>/`. The received JSON has a byte string payload and should be converted into a Unicode string using the UTF-8 encoding. After it is decoded it is converted into a python dictionary. Logic to remove possible duplicates in the 'Events' list is also implemented. This function returns a dictionary 
 
 
 ### handle_webhook
 
-The handle_webhook function is used to process incomming changes of reservations from an external webhook that sends a request to the app. Each webhook can contain multiple reservation events. As the code iterates over the events, the following logic is performed:
-- we retrieve information for the reservation and guest from an external API by ReservationId and GuestId. In the mock external API functions there is also a case when the API raises and exception as it it doesn't work. For this situation I impelented a retry logic to try to execute the function multiple times.
+The handle_webhook function is used to process incoming changes of reservations from an external webhook that sends a request to the app. Each webhook can contain multiple reservation events. As the code iterates over the events, the following logic is performed:
+- we retrieve information for the reservation and guest from an external API by ReservationId and GuestId. In the mock external API functions there is also a case when the API raises and exception as it it doesn't work. For this situation I impelemented a retry logic to try to execute the function multiple times.
 
 - we update/create Guest using the phone number as identifier. If the external API doesn't retrieve a valid phone number, then the entry in the Stay table is created without a Guest object. The column language is populated by using the get_language(country) function, to map the country with corresponding language from the language_mapfile.py file. The default of the language is English, if no valid relation exists.
 
@@ -69,7 +69,7 @@ The handle_webhook function is used to process incomming changes of reservations
 
 ### update_tomorrows_stays
 
-This function performs an automatic update of the reservations that are planned for the next day. The dataset of reservations are retrieved from the external API with the function `get_reservations_between_dates()`, filtered by check in date. After the data is retrieved it is formated into a dictionary similar to the external input for the  `webhook/str:pms_name>/` endpoint and it is processed by the handle_webhhok function. This process is scheduled to be performed every day at 00:00. 
+This function performs an automatic update of the reservations that are planned for the next day. The dataset of reservations are retrieved from the external API with the function `get_reservations_between_dates()`, filtered by check in date. After the data is retrieved it is formatted into a dictionary similar to the external input for the  `webhook/str:pms_name>/` endpoint and it is processed by the handle_webhhok function. This process is scheduled to be performed every day at 00:00. 
 
 To test the logic of this function we can use the Django shell by executing `python manage.py shell ` in Terminal to open it. After it is opened we enter the following code block:
 ```
@@ -84,7 +84,7 @@ To schedule the execution of the update every day at 00:00 we use django apsched
 
 ### stay_has_breakfast
 
-This function checks if the reservation has breakfast includded, by getting the resetvation details from the external API filtered by the reservation id retrieved from the Stay object on input. 
+This function checks if the reservation has breakfast included, by getting the reservation details from the external API filtered by the reservation id retrieved from the Stay object on input. 
 
 
 For any additional questions you can contact me at ipopducheva@gmail.com
