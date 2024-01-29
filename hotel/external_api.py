@@ -24,7 +24,7 @@ reservation_statuses = [
     "booked",
 ]
 
-@retry(wait_fixed=1000, stop_max_attempt_number=3)
+@retry(wait_fixed=1000, stop_max_attempt_number=5)
 def get_reservations_between_dates(checkin_date: str, checkout_date: str) -> str:
     """
     Returns the reservations between the given checkin and checkout dates.
@@ -62,7 +62,7 @@ def get_reservations_between_dates(checkin_date: str, checkout_date: str) -> str
         ]
     )
 
-@retry(wait_fixed=1000, stop_max_attempt_number=3)
+@retry(wait_fixed=1000, stop_max_attempt_number=5)
 def get_reservation_details(reservation_id: str) -> str:
     """
     Returns the reservation details for any given reservation ID.
@@ -92,7 +92,7 @@ def get_reservation_details(reservation_id: str) -> str:
         }
     )
 
-@retry(wait_fixed=1000, stop_max_attempt_number=3)
+@retry(wait_fixed=1000, stop_max_attempt_number=5)
 def get_guest_details(guest_id: str) -> str:
     """
     Returns the guest details for any given guest ID.
