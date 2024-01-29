@@ -177,8 +177,8 @@ class PMS_Mews(PMS):
         tomorrow_date = datetime.now()+timedelta(days=1)
         tomorrow_date_string = tomorrow_date.strftime('%Y-%M-%D')
         reservations=json.loads(get_reservations_between_dates(tomorrow_date_string, ''))
-        print(reservations)
-        print('==========================================')
+
+        
         autoupdate_reservations={}
         autoupdate_reservations['HotelId']=reservations[0]['HotelId']
         autoupdate_reservations['IntegrationId']='Auto Update'
@@ -188,9 +188,8 @@ class PMS_Mews(PMS):
             autoupdate_reservations['Events'].append({"Name":"AutoUpdate","Value":{"ReservationId":res["ReservationId"]}})
             
         #Call handle_webhook function
-        print(autoupdate_reservations)
-
         update=self.handle_webhook(autoupdate_reservations)
+
         return update
 
 
